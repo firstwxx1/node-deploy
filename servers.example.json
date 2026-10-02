@@ -1,0 +1,19 @@
+{
+  "_note": "批量部署列表。复制为 servers.json 后填写真实密码（servers.json 已被 .gitignore 排除，不会入库）。支持 key 或 password 二选一。",
+  "servers": [
+    {
+      "host": "1.2.3.4",
+      "user": "root",
+      "password": "改成真实密码",
+      "port": 22,
+      "args": "--profile all --engine xray --port 443 --sni www.cloudflare.com"
+    },
+    {
+      "host": "5.6.7.8",
+      "user": "root",
+      "password": "改成真实密码",
+      "port": 22,
+      "args": "--profile all --engine singbox --port 25774 --sni itunes.apple.com"
+    }
+  ]
+}

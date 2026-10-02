@@ -1,0 +1,16 @@
+# 真实凭据与部署产物，永不入库
+servers.json
+config.env
+links/
+*.log
+
+# 离线二进制
+*.zip
+*.tar.gz
+/tmp/*
+
+# 系统
+__pycache__/
+*.pyc
+.DS_Store
+.vscode/
