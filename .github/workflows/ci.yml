@@ -1,0 +1,8 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: find . -name '*.sh' -not -path './.git/*' -exec bash -n {} +

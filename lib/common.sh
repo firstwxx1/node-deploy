@@ -197,6 +197,8 @@ DefaultDependencies=no
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/sbin/node-deploy-iptables-restore
+MemoryHigh=128M
+MemoryMax=256M
 
 [Install]
 WantedBy=multi-user.target
