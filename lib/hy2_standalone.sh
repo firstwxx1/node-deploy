@@ -50,6 +50,16 @@ hy2_standalone_deploy() {
     echo "ignoreClientBandwidth: false"
   } > "$HY2_CONF"
 
+  mkdir -p /etc/systemd/system/hysteria-server.service.d
+  cat >/etc/systemd/system/hysteria-server.service.d/99-node-deploy.conf <<'EOF'
+[Service]
+Restart=always
+RestartSec=2
+LimitNOFILE=1048576
+LimitNPROC=65535
+EOF
+  systemctl daemon-reload >/dev/null 2>&1 || true
+
   open_port "$port" udp
   if ! svc_enable hysteria-server; then
     err "Hysteria2 启动失败：$(systemctl status hysteria-server --no-pager 2>/dev/null | tail -5)"
@@ -68,14 +78,17 @@ hy2_setup_hop() {
   lo="${range%-*}"; hi="${range#*-}"
   step "配置 UDP 端口跳跃 ${lo}-${hi} → ${port}"
   need_cmd iptables >/dev/null 2>&1 || pkg_update iptables >/dev/null 2>&1
-  modprobe ip_conntrack >/dev/null 2>&1
-  modprobe nf_conntrack >/dev/null 2>&1
-  iptables -t nat -C PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || \
-    iptables -t nat -A PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port"
-  ip6tables -t nat -C PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || \
-    ip6tables -t nat -A PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null
+  modprobe ip_conntrack >/dev/null 2>&1 || true
+  modprobe nf_conntrack >/dev/null 2>&1 || true
+  # 仅拦截目的地址为本机（addrtype LOCAL）的入站 UDP，绝不劫持本机发往外部的出站 UDP
+  iptables -t nat -C PREROUTING -p udp -m addrtype --dst-type LOCAL --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || \
+    iptables -t nat -A PREROUTING -p udp -m addrtype --dst-type LOCAL --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port"
+  ip6tables -t nat -C PREROUTING -p udp -m addrtype --dst-type LOCAL --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || \
+    ip6tables -t nat -A PREROUTING -p udp -m addrtype --dst-type LOCAL --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || true
   iptables -C INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT 2>/dev/null || \
     iptables -I INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT
+  ip6tables -C INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT 2>/dev/null || \
+    ip6tables -I INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT 2>/dev/null || true
   save_iptables
   ok "端口跳跃已生效并持久化"
 }
@@ -83,7 +96,11 @@ hy2_setup_hop() {
 hy2_remove_hop() {
   local port="$1" range="$2" lo hi
   lo="${range%-*}"; hi="${range#*-}"
-  iptables -t nat -D PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null
-  iptables -D INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT 2>/dev/null
+  iptables -t nat -D PREROUTING -p udp -m addrtype --dst-type LOCAL --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || true
+  iptables -t nat -D PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || true
+  ip6tables -t nat -D PREROUTING -p udp -m addrtype --dst-type LOCAL --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || true
+  ip6tables -t nat -D PREROUTING -p udp --dport "${lo}:${hi}" -j REDIRECT --to-ports "$port" 2>/dev/null || true
+  iptables -D INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT 2>/dev/null || true
+  ip6tables -D INPUT -p udp --dport "${lo}:${hi}" -j ACCEPT 2>/dev/null || true
   save_iptables
 }
