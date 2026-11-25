@@ -76,8 +76,9 @@ def clash(n):
                      "servername":pr["sni"],"reality-opts":{"public-key":pr["pbk"],"short-id":pr["sid"]},
                      "client-fingerprint":pr.get("fp","chrome"),"network":"tcp","packet-addr":True})
     elif t=="hysteria2":
-        base.update({"password":pr["auth"],"sni":pr["sni"],"skip-cert-verify":True})
-        if pr.get("obfs_password"): base["obfs-opts"]={"mode":"salamander","password":pr["obfs_password"]}
+        base.update({"password":pr["auth"],"sni":pr["sni"],"skip-cert-verify":True,"disable-mtu-discovery":True})
+        if pr.get("mport"): base.update({"ports":pr["mport"],"hop-interval":60})
+        if pr.get("obfs_password"): base.update({"obfs":"salamander","obfs-password":pr["obfs_password"]})
     elif t=="socks5":
         base={"name":n["label"],"type":"socks5","server":n["host"],"port":int(n["port"]),
               "username":pr["username"],"password":pr["password"],"udp":True}

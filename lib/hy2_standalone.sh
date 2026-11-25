@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # lib/hy2_standalone.sh — 独立 Hysteria2 服务端（UDP/QUIC）+ 端口跳跃
 # 端口跳跃原理：服务端只听一个端口，用 iptables DNAT 把整个 UDP 段重定向过去；
-# 客户端配置 mport，每 30s 换端口，抗 QoS/限速和按端口的封锁。
+# 客户端配置 mport，每 60s 换端口，抗 QoS/限速和按端口的封锁。
 
 hy2_standalone_deploy() {
   local port="${1:-10153}" auth="$2" sni="$3" obfspw="$4" hop="${5:-}"
@@ -43,7 +43,7 @@ hy2_standalone_deploy() {
     echo "  maxConnReceiveWindow: 20971520"
     echo "  maxIdleTimeout: 60s"
     echo "  maxIncomingStreams: 1024"
-    echo "  disablePathMTUDiscovery: false"
+    echo "  disablePathMTUDiscovery: true"
     echo "bandwidth:"
     echo "  up: 500 mbps"
     echo "  down: 500 mbps"
